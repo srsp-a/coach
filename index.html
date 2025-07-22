@@ -28,6 +28,18 @@
         .input-style { display: block; width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; box-shadow: sm; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
+        .autocomplete-results {
+            position: absolute;
+            z-index: 1000;
+            width: 100%;
+            max-height: 10rem;
+            overflow-y: auto;
+            border: 1px solid #d1d5db;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            background-color: white;
+            box-shadow: lg;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -78,7 +90,7 @@
         <!-- Class Management -->
         <div id="class-management" class="admin-tab-content"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">รายการคลาสเรียน</h2><button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"><i class="fas fa-plus mr-2"></i>เพิ่มคลาสใหม่</button></div><div class="bg-white p-4 rounded-lg shadow overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2">ชื่อคลาส</th><th class="p-2">รับ/ลงทะเบียน</th><th class="p-2">ราคา</th><th class="p-2">จัดการ</th></tr></thead><tbody id="admin-class-list"></tbody></table></div></div>
         <!-- Coach Management -->
-        <div id="coach-management" class="admin-tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">รายชื่อโค้ช</h2><button id="add-coach-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"><i class="fas fa-user-plus mr-2"></i>เพิ่มโค้ชใหม่</button></div><div class="bg-white p-4 rounded-lg shadow overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2 w-16">รูป</th><th class="p-2">ชื่อโค้ช</th><th class="p-2">ID โค้ช</th><th class="p-2">จัดการ</th></tr></thead><tbody id="admin-coach-list"></tbody></table></div></div>
+        <div id="coach-management" class="admin-tab-content hidden"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">รายชื่อโค้ช</h2><button id="add-coach-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"><i class="fas fa-user-plus mr-2"></i>เพิ่มโค้ชใหม่</button></div><div class="bg-white p-4 rounded-lg shadow overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2 w-16">รูป</th><th class="p-2">ชื่อโค้ช</th><th class="p-2">รายรับรวม</th><th class="p-2">จัดการ</th></tr></thead><tbody id="admin-coach-list"></tbody></table></div></div>
         <!-- Student Management -->
         <div id="student-management" class="admin-tab-content hidden">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
@@ -112,7 +124,7 @@
     </div>
 
     <!-- Modals -->
-    <div id="registration-modal" class="modal"><div class="modal-content bg-white w-full max-w-lg"><span class="close-button">&times;</span><h2 class="text-2xl font-bold mb-4 text-center">สมัครเรียน</h2><form id="registration-form"><div class="mb-4"><label class="block text-sm font-medium text-gray-700">คลาสเรียน</label><p id="registration-class-name" class="mt-1 text-lg font-semibold text-purple-700"></p></div><div class="mb-4"><label for="student-name" class="block text-sm font-medium text-gray-700">ชื่อนักเรียน</label><input list="previous-students" id="student-name" name="student-name" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"><datalist id="previous-students"></datalist></div><div class="mb-4"><label for="team-name" class="block text-sm font-medium text-gray-700">ชื่อทีม</label><input type="text" id="team-name" name="team-name" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"></div><div class="mb-4"><label for="student-photo" class="block text-sm font-medium text-gray-700">รูปนักเรียน (ถ้ามี)</label><input type="file" id="student-photo" name="student-photo" accept="image/*" class="file-input-style"></div><button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยันการสมัคร</button></form></div></div>
+    <div id="registration-modal" class="modal"><div class="modal-content bg-white w-full max-w-lg"><span class="close-button">&times;</span><h2 class="text-2xl font-bold mb-4 text-center">สมัครเรียน</h2><form id="registration-form"><input type="hidden" name="studentId"><div class="mb-4"><label class="block text-sm font-medium text-gray-700">คลาสเรียน</label><p id="registration-class-name" class="mt-1 text-lg font-semibold text-purple-700"></p></div><div class="mb-4 relative"><label for="student-name" class="block text-sm font-medium text-gray-700">ชื่อนักเรียน</label><input type="text" id="student-name" name="studentName" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" autocomplete="off" list="previous-students"><datalist id="previous-students"></datalist><div id="student-name-results" class="autocomplete-results hidden"></div></div><div class="mb-4"><label for="team-name" class="block text-sm font-medium text-gray-700">ชื่อทีม</label><input type="text" id="team-name" name="teamName" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"></div><div class="mb-4"><label for="student-photo" class="block text-sm font-medium text-gray-700">รูปนักเรียน (ถ้ามี)</label><input type="file" id="student-photo" name="student-photo" accept="image/*" class="file-input-style"></div><button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยันการสมัคร</button></form></div></div>
     <div id="success-modal" class="modal"><div class="modal-content bg-white w-full max-w-md text-center"><span class="close-button">&times;</span><i class="fas fa-check-circle text-5xl text-green-500 mb-4"></i><h2 class="text-2xl font-bold mb-2">สำเร็จ!</h2><p id="success-message" class="text-gray-600 mb-6"></p><div class="flex justify-center gap-4"><button id="pay-now-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">ชำระเงินทันที</button><button id="pay-later-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">ชำระเงินภายหลัง</button></div></div></div>
     <div id="payment-modal" class="modal"><div class="modal-content bg-white w-full max-w-md text-center"><span class="close-button">&times;</span><h2 class="text-2xl font-bold mb-4">รายละเอียดการชำระเงิน</h2><img id="qr-code-img" src="https://placehold.co/250x250/eeeeee/000000?text=QR+Code" alt="QR Code" class="mx-auto mb-4 border rounded-lg"><p class="mb-1">ชื่อ: <span id="payment-student-name" class="font-semibold"></span></p><p class="mb-4">จำนวนเงิน: <span id="payment-amount" class="font-semibold text-red-500"></span> บาท</p><form id="payment-confirmation-form"><div class="mb-4"><label for="payment-datetime" class="block text-sm font-medium text-gray-700">วันที่และเวลาที่ชำระ</label><input type="datetime-local" id="payment-datetime" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"></div><div class="mb-4"><label for="payment-slip" class="block text-sm font-medium text-gray-700">แนบสลิป</label><input type="file" id="payment-slip" accept="image/*" required class="file-input-style"></div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยันการชำระเงิน</button></form></div></div>
     <div id="poster-modal" class="modal"><div class="modal-content bg-transparent w-full max-w-lg p-0"><span class="close-button text-white text-4xl">&times;</span><img id="poster-img" src="https://placehold.co/600x800/333333/FFFFFF?text=Poster" class="w-full h-auto rounded-lg"></div></div>
@@ -122,7 +134,7 @@
     <div id="student-form-modal" class="modal"><div class="modal-content bg-white w-full max-w-md"><span class="close-button">&times;</span><h2 id="student-form-title" class="text-2xl font-bold mb-4 text-center"></h2><form id="student-form"><input type="hidden" name="StudentID"><div class="mb-4"><label class="block text-sm font-medium">ชื่อนักเรียน</label><input type="text" name="StudentName" required class="mt-1 w-full input-style"></div><div class="mb-4"><label class="block text-sm font-medium">ชื่อทีม</label><input type="text" name="Team" class="mt-1 w-full input-style"></div><div class="mb-4"><label class="block text-sm font-medium">รูปนักเรียน (อัปโหลดไฟล์ใหม่ถ้าต้องการเปลี่ยน)</label><input type="file" name="StudentPictureFile" accept="image/*" class="file-input-style"></div><div class="text-right"><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">บันทึก</button></div></form></div></div>
     <div id="view-student-modal" class="modal"><div class="modal-content bg-white w-full max-w-2xl modal-content-scroll"><span class="close-button">&times;</span><div id="view-student-content"></div></div></div>
     <div id="view-class-modal" class="modal"><div class="modal-content bg-white w-full max-w-3xl"><span class="close-button">&times;</span><div class="flex justify-between items-center mb-4"><h2 id="view-class-title" class="text-2xl font-bold"></h2><button id="add-student-to-class-btn" class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition text-sm"><i class="fas fa-plus mr-1"></i>เพิ่มนักเรียนในคลาสนี้</button></div><div id="view-class-summary" class="mb-4 text-center grid grid-cols-2 lg:grid-cols-3 gap-4"></div><div class="bg-gray-50 p-4 rounded-lg shadow-inner max-h-96 overflow-y-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2">รูป</th><th class="p-2">ชื่อ (ID)</th><th class="p-2">ทีม</th><th class="p-2">สถานะ</th><th class="p-2">สลิป</th><th class="p-2">จัดการ</th></tr></thead><tbody id="view-class-student-list"></tbody></table></div></div></div>
-    <div id="admin-register-student-modal" class="modal"><div class="modal-content bg-white w-full max-w-lg"><span class="close-button">&times;</span><h2 class="text-2xl font-bold mb-4 text-center">เพิ่มนักเรียนในคลาส</h2><form id="admin-register-student-form"><input type="hidden" name="classId"><div class="mb-4"><label class="block text-sm font-medium text-gray-700">คลาสเรียน</label><p id="admin-register-class-name" class="mt-1 text-lg font-semibold text-purple-700"></p></div><div class="mb-4"><label for="admin-student-name" class="block text-sm font-medium text-gray-700">ชื่อนักเรียน (ค้นหาชื่อเดิมได้)</label><input list="admin-previous-students" id="admin-student-name" name="studentName" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"><datalist id="admin-previous-students"></datalist></div><div class="mb-4"><label for="admin-team-name" class="block text-sm font-medium text-gray-700">ชื่อทีม</label><input type="text" id="admin-team-name" name="teamName" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"></div><button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยันการเพิ่ม</button></form></div></div>
+    <div id="admin-register-student-modal" class="modal"><div class="modal-content bg-white w-full max-w-lg"><span class="close-button">&times;</span><h2 class="text-2xl font-bold mb-4 text-center">เพิ่มนักเรียนในคลาส</h2><form id="admin-register-student-form"><input type="hidden" name="classId"><input type="hidden" name="studentId"><div class="mb-4"><label class="block text-sm font-medium text-gray-700">คลาสเรียน</label><p id="admin-register-class-name" class="mt-1 text-lg font-semibold text-purple-700"></p></div><div class="mb-4 relative"><label for="admin-student-name" class="block text-sm font-medium text-gray-700">ชื่อนักเรียน</label><input type="text" id="admin-student-name" name="studentName" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" autocomplete="off"><div id="admin-student-name-results" class="autocomplete-results hidden"></div></div><div class="mb-4"><label for="admin-team-name" class="block text-sm font-medium text-gray-700">ชื่อทีม</label><input type="text" id="admin-team-name" name="teamName" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"></div><button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยันการเพิ่ม</button></form></div></div>
 
     <!-- Loading Spinner -->
     <div id="loading-spinner" class="modal" style="display: flex; background-color: rgba(255, 255, 255, 0.7);"><div class="flex items-center justify-center h-full"><i class="fas fa-spinner fa-spin text-purple-500 text-6xl"></i></div></div>
@@ -242,7 +254,8 @@
         selectClassBtn.innerHTML = appData.classes.map(c => `<option value="${c.ClassID}" ${c.ClassID == currentClassId ? 'selected' : ''}>${c.ClassName}</option>`).join('');
         selectClassBtn.style.display = appData.classes.length > 1 ? 'block' : 'none';
         
-        const registrationsForClass = appData.registrations.filter(r => r.ClassID == currentClassId);
+        const registrationsForClass = appData.registrations.filter(r => r.ClassID == currentClassId)
+            .sort((a, b) => new Date(a.Timestamp) - new Date(b.Timestamp));
         studentList.innerHTML = ''; 
         if (registrationsForClass.length > 0) {
             registrationsForClass.forEach(reg => {
@@ -255,7 +268,7 @@
                     const studentRowHTML = `
                         <div class="flex items-center justify-between p-2 rounded-lg bg-white/50 shadow-sm">
                             <div class="flex items-center gap-4">
-                                <img src="${student.PictureURL || 'https://placehold.co/40x40/cccccc/FFFFFF?text=S'}" alt="รูปนักเรียน" class="w-10 h-10 rounded-full object-cover">
+                                <img src="${student.PictureURL || 'https://placehold.co/40x40/cccccc/FFFFFF?text=S'}" alt="รูปนักเรียน" class="w-10 h-10 rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/FFFFFF?text=S';">
                                 <div>
                                     <p class="font-semibold text-xl text-gray-800">${student.StudentName}</p>
                                     <p class="text-xs text-gray-500">ID: ${student.StudentID}</p>
@@ -296,16 +309,25 @@
     }
 
     function renderAdminCoachList() {
-        adminCoachList.innerHTML = appData.coaches.map(c => `
+        adminCoachList.innerHTML = appData.coaches.map(c => {
+            const classesTaught = appData.classes.filter(cls => cls.CoachID === c.CoachID);
+            let totalIncome = 0;
+            classesTaught.forEach(cls => {
+                const paidRegistrations = appData.registrations.filter(reg => reg.ClassID === cls.ClassID && reg.PaymentStatus === 'Paid');
+                totalIncome += paidRegistrations.length * (cls.Price || 0);
+            });
+
+            return `
             <tr class="border-b hover:bg-gray-50">
-                <td class="p-2"><img src="${c.CoachPictureURL || 'https://placehold.co/50x50/cccccc/FFFFFF?text=No+Img'}" alt="รูปโค้ช" class="w-12 h-12 rounded-full object-cover"></td>
-                <td class="p-2 font-semibold">${c.CoachName}</td>
-                <td class="p-2 text-gray-500">${c.CoachID}</td>
+                <td class="p-2"><img src="${c.CoachPictureURL || 'https://placehold.co/50x50/cccccc/FFFFFF?text=No+Img'}" alt="รูปโค้ช" class="w-12 h-12 rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/FFFFFF?text=E';"></td>
+                <td class="p-2 font-semibold">${c.CoachName}<br><span class="text-xs text-gray-500">${c.CoachID}</span></td>
+                <td class="p-2 font-semibold text-green-600">${totalIncome.toLocaleString()} บาท</td>
                 <td class="p-2 space-x-2">
                     <button class="text-yellow-500 hover:text-yellow-700 js-edit-coach" data-id="${c.CoachID}"><i class="fas fa-edit"></i></button>
                     <button class="text-red-500 hover:text-red-700 js-delete-coach" data-id="${c.CoachID}"><i class="fas fa-trash"></i></button>
                 </td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
         if (!appData.coaches.length) adminCoachList.innerHTML = '<tr><td colspan="4" class="text-center p-4">ยังไม่มีโค้ชในระบบ</td></tr>';
     }
     
@@ -314,7 +336,7 @@
         const filteredStudents = appData.students.filter(s => s.StudentName.toLowerCase().includes(lowerCaseSearchTerm));
         adminStudentList.innerHTML = filteredStudents.map(s => `
             <tr class="border-b hover:bg-gray-50">
-                <td class="p-2"><img src="${s.PictureURL || 'https://placehold.co/50x50/cccccc/FFFFFF?text=S'}" alt="รูปนักเรียน" class="w-12 h-12 rounded-full object-cover"></td>
+                <td class="p-2"><img src="${s.PictureURL || 'https://placehold.co/50x50/cccccc/FFFFFF?text=S'}" alt="รูปนักเรียน" class="w-12 h-12 rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/FFFFFF?text=E';"></td>
                 <td class="p-2 font-semibold">${s.StudentName}</td>
                 <td class="p-2">${s.Team}</td>
                 <td class="p-2 text-gray-500">${s.StudentID}</td>
@@ -369,10 +391,16 @@
         coachSelect.innerHTML = '<option value="">-- เลือกโค้ช --</option>' + appData.coaches.map(coach => `<option value="${coach.CoachID}">${coach.CoachName}</option>`).join('');
         const studentListContainer = document.getElementById('class-form-student-list');
         studentListContainer.innerHTML = appData.students.map(s => `
-            <label class="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-md">
-                <input type="checkbox" name="studentsToRegister" value="${s.StudentID}" class="rounded">
-                <img src="${s.PictureURL || 'https://placehold.co/30x30/cccccc/FFFFFF?text=S'}" class="w-8 h-8 rounded-full object-cover">
-                <span>${s.StudentName}</span>
+            <label class="flex items-center justify-between gap-2 p-1 hover:bg-gray-100 rounded-md">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="studentsToRegister" value="${s.StudentID}" class="rounded">
+                    <img src="${s.PictureURL || 'https://placehold.co/30x30/cccccc/FFFFFF?text=S'}" class="w-8 h-8 rounded-full object-cover">
+                    <div>
+                        <span>${s.StudentName}</span>
+                        <span class="text-xs text-gray-500 block">${s.StudentID}</span>
+                    </div>
+                </div>
+                <span class="text-sm text-gray-600">${s.Team || ''}</span>
             </label>
         `).join('');
         openModal('class-form-modal');
@@ -460,7 +488,55 @@
         }
     }
     
-    function handleViewStudent(studentId) { /* ... unchanged ... */ }
+    function handleViewStudent(studentId) {
+        const student = appData.students.find(s => s.StudentID === studentId);
+        if (!student) return;
+
+        const studentRegistrations = appData.registrations.filter(r => r.StudentID === studentId);
+        let totalPaid = 0;
+        const classHistoryHtml = studentRegistrations.map(reg => {
+            const cls = appData.classes.find(c => c.ClassID === reg.ClassID);
+            if (!cls) return '';
+            const isPaid = reg.PaymentStatus === 'Paid';
+            if (isPaid) {
+                totalPaid += parseFloat(cls.Price) || 0;
+            }
+            return `
+                <div class="p-3 border rounded-lg ${isPaid ? 'bg-green-50' : 'bg-yellow-50'}">
+                    <p class="font-semibold">${cls.ClassName}</p>
+                    <p class="text-sm text-gray-600">${cls.Dates} | ราคา: ${cls.Price} บาท</p>
+                    <p class="text-sm font-bold ${isPaid ? 'text-green-600' : 'text-yellow-600'}">สถานะ: ${isPaid ? 'จ่ายแล้ว' : 'รอชำระ'}</p>
+                </div>
+            `;
+        }).join('');
+
+        const content = `
+            <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
+                <img src="${student.PictureURL || 'https://placehold.co/100x100/cccccc/FFFFFF?text=S'}" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg">
+                <div>
+                    <h2 class="text-3xl font-bold">${student.StudentName}</h2>
+                    <p class="text-lg text-gray-600">ทีม: ${student.Team}</p>
+                    <p class="text-sm text-gray-500">ID: ${student.StudentID}</p>
+                </div>
+            </div>
+            <div class="bg-gray-100 p-4 rounded-lg">
+                <details open>
+                    <summary class="font-semibold text-lg cursor-pointer mb-2 flex justify-between items-center">
+                        <span>ประวัติการลงเรียน (${studentRegistrations.length} คลาส)</span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </summary>
+                    <div class="space-y-3 mt-2">
+                        ${classHistoryHtml || '<p class="text-center text-gray-500">ไม่มีประวัติการลงเรียน</p>'}
+                    </div>
+                </details>
+            </div>
+            <div class="mt-4 text-right">
+                <p class="text-sm text-gray-600">เรียนไปแล้ว ${studentRegistrations.length} คลาส, จ่ายแล้ว <span class="font-bold text-green-700">${totalPaid.toLocaleString()}</span> บาท</p>
+            </div>
+        `;
+        document.getElementById('view-student-content').innerHTML = content;
+        openModal('view-student-modal');
+    }
     
     function handleAdminAddStudentToClass() {
         if (!currentViewingClassId) return;
@@ -471,12 +547,6 @@
         adminRegisterStudentForm.querySelector('[name="classId"]').value = currentViewingClassId;
         document.getElementById('admin-register-class-name').textContent = classData.ClassName;
         
-        const datalist = document.getElementById('admin-previous-students');
-        datalist.innerHTML = '';
-        appData.students.forEach(s => {
-            datalist.innerHTML += `<option value="${s.StudentName}" data-team="${s.Team || ''}"></option>`;
-        });
-
         openModal('admin-register-student-modal');
     }
 
@@ -535,11 +605,6 @@
                 const registrationsCount = appData.registrations.filter(r => r.ClassID == currentClassId).length;
                 if (registrationsCount >= currentClass.MaxStudents) { alert('ขออภัย คลาสนี้เต็มแล้ว'); return; }
                 document.getElementById('registration-class-name').textContent = currentClass.ClassName;
-                const previousStudentsDatalist = document.getElementById('previous-students');
-                previousStudentsDatalist.innerHTML = '';
-                appData.students.forEach(s => {
-                    previousStudentsDatalist.innerHTML += `<option value="${s.StudentName}"></option>`;
-                });
                 openModal('registration-modal');
             }
             if (button.id === 'download-btn') { /* logic for download */ }
@@ -602,6 +667,9 @@
             const student = appData.students.find(s => s.StudentName === e.target.value);
             if (student) {
                 document.getElementById('team-name').value = student.Team || '';
+                registrationForm.querySelector('[name="studentId"]').value = student.StudentID;
+            } else {
+                registrationForm.querySelector('[name="studentId"]').value = '';
             }
         });
         const adminStudentNameInput = document.getElementById('admin-student-name');
@@ -609,6 +677,9 @@
             const student = appData.students.find(s => s.StudentName === e.target.value);
             if (student) {
                 document.getElementById('admin-team-name').value = student.Team || '';
+                adminRegisterStudentForm.querySelector('[name="studentId"]').value = student.StudentID;
+            } else {
+                adminRegisterStudentForm.querySelector('[name="studentId"]').value = '';
             }
         });
 
@@ -619,8 +690,9 @@
                 const formData = new FormData(e.target);
                 const data = {
                     classId: currentClassId,
-                    studentName: formData.get('student-name'),
-                    teamName: formData.get('team-name')
+                    studentName: formData.get('studentName'),
+                    teamName: formData.get('teamName'),
+                    studentId: formData.get('studentId')
                 };
                 const result = await apiCall('registerStudent', data);
                 if (result.success) {
@@ -640,7 +712,8 @@
                 const data = {
                     classId: formData.get('classId'),
                     studentName: formData.get('studentName'),
-                    teamName: formData.get('teamName')
+                    teamName: formData.get('teamName'),
+                    studentId: formData.get('studentId')
                 };
                 const result = await apiCall('registerStudent', data);
                 if (result.success) {
