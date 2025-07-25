@@ -565,7 +565,7 @@
 
     let selectedDays = 3;
     let selectedPrice = 2000;
-    let uploadedImageBase64 = null;
+    let uploadedImageUrl = null;
     let currentStudentData = null;
     let currentClassIndex = 0;
     let sortedClasses = [];
@@ -894,7 +894,7 @@
         regFormHeader.innerHTML = `<p>${currentClass.name}</p><p>${currentClass.schedule.replace('<br>', ' | ')}</p>`;
         registrationForm.reset();
         photoPreview.src = 'https://placehold.co/150x150/d1d5db/ffffff?text=+';
-        uploadedImageBase64 = null;
+        uploadedImageUrl = null;
         document.getElementById('profile-visible').checked = true;
         document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('bg-purple-500', 'text-white', 'shadow-md'));
         const defaultBtn = document.querySelector('.day-btn[data-days="3"][data-price="2000"]');
@@ -926,7 +926,7 @@
             const reader = new FileReader();
             reader.onloadend = () => {
                 photoPreview.src = reader.result;
-                uploadedImageBase64 = reader.result;
+                uploadedImageUrl = reader.result; // For preview
             };
             reader.readAsDataURL(file);
         }
@@ -951,7 +951,7 @@
             isProfileVisible: document.getElementById('profile-visible').checked,
             Days: selectedDays,
             Price: selectedPrice,
-            ProfileImage: uploadedImageBase64 || `https://i.pravatar.cc/150?u=${encodeURIComponent(studentName)}`
+            ProfileImage: uploadedImageUrl || `https://i.pravatar.cc/150?u=${encodeURIComponent(studentName)}`
         };
 
         setupPaymentPage(newStudentData, true); // True for new student
