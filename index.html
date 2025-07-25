@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', 'Noto Sans Thai', sans-serif;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+        }
+        .bg-custom-pink { background-color: #FF6B81; }
+        .swal2-popup {
+            font-family: 'Poppins', 'Noto Sans Thai', sans-serif;
+        }
+        #student-list::-webkit-scrollbar { width: 8px; }
+        #student-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        #student-list::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 10px; }
+        #student-list::-webkit-scrollbar-thumb:hover { background: #c084fc; }
+        .form-check-input:checked { background-color: #a855f7; border-color: #a855f7; }
+        .form-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus { outline: none; border-color: #a855f7; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #a855f7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .admin-nav-item {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .admin-nav-item.active {
+            background-color: #ffffff;
+            color: #1f2937;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center items-start p-4 pt-8 md:pt-12">
+
+    <div id="app-container" class="w-full">
+        <!-- Student List Card (Visible by default) -->
+        <div id="student-list-card" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 relative mx-auto">
+            <header class="text-center mb-6">
+                <img id="class-main-image" src="https://placehold.co/150x150/a855f7/white?text=Coach" alt="Coach" class="w-24 h-24 rounded-full mx-auto -mt-16 border-4 border-white shadow-md object-cover">
+                <h1 id="class-coach-name" class="text-xl font-bold mt-4 text-gray-800">COACH</h1>
+                <div class="flex justify-center items-center space-x-2">
+                    <button id="prev-class-btn" class="hidden text-purple-600 hover:text-purple-800 p-1 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <p id="class-name" class="text-purple-600 font-semibold text-lg"></p>
+                    <button id="next-class-btn" class="hidden text-purple-600 hover:text-purple-800 p-1 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </div>
+                <div id="class-schedule" class="text-sm text-gray-500 mt-2"></div>
+                <p id="class-price" class="mt-3 text-lg font-bold text-purple-600"></p>
+            </header>
+
+            <div id="student-list" class="space-y-4 pr-2">
+                <!-- Student items will be dynamically inserted here -->
+                <div id="list-loader" class="flex justify-center items-center h-full">
+                    <div class="loader"></div>
+                </div>
+            </div>
+            
+            <footer class="mt-6 flex justify-between items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <button id="add-student-btn" class="bg-custom-pink text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform focus:outline-none focus:ring-4 focus:ring-pink-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+                <svg id="settings-btn" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 cursor-pointer hover:text-purple-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </footer>
+        </div>
+
+        <!-- Registration Form Card (Initially Hidden) -->
+        <div id="registration-form-card" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 relative hidden mx-auto">
+            <h2 class="text-2xl font-bold text-center text-gray-800">สมัครเรียน</h2>
+            <div id="reg-form-header" class="text-center text-sm text-gray-500 mt-1 mb-6"></div>
+
+            <form id="registration-form" class="space-y-4">
+                <div class="flex items-center space-x-4">
+                    <!-- Left side: Photo Upload -->
+                    <div class="flex-shrink-0 text-center">
+                        <label for="student-photo-upload" class="cursor-pointer">
+                            <img id="photo-preview" src="https://placehold.co/150x150/d1d5db/ffffff?text=+" alt="Student Photo" class="w-24 h-24 rounded-full object-cover border-2 border-dashed border-gray-300">
+                        </label>
+                        <input type="file" id="student-photo-upload" class="hidden" accept="image/*">
+                        <p class="text-xs text-gray-500 mt-1">อัพโหลดรูป</p>
+                    </div>
+                    <!-- Right side: Name and Team -->
+                    <div class="flex-grow space-y-4">
+                        <div>
+                            <label for="student-name" class="font-semibold text-gray-600">ชื่อเล่น</label>
+                            <input type="text" id="student-name" name="name" placeholder="เช่น อคิณ" class="form-input mt-1" required>
+                        </div>
+                        <div>
+                            <label for="student-team" class="font-semibold text-gray-600">ชื่อทีม (ถ้ามี)</label>
+                            <input type="text" id="student-team" name="team" placeholder="เช่น YRK" class="form-input mt-1">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label for="parent-phone" class="font-semibold text-gray-600">เบอร์โทรผู้ปกครอง</label>
+                    <input type="tel" id="parent-phone" name="phone" placeholder="0812345678" class="form-input mt-1" required>
+                </div>
+                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <label for="profile-visible" class="font-semibold text-gray-700 flex items-center cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                        </svg>
+                        แสดงโปรไฟล์
+                    </label>
+                    <input type="checkbox" id="profile-visible" class="form-check-input h-6 w-6 rounded cursor-pointer" checked>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold mb-2 text-gray-600">เลือกจำนวนวันที่เรียน</p>
+                    <div id="days-options" class="flex space-x-2">
+                        <button type="button" data-days="2" data-price="1600" class="day-btn flex-1 border-2 border-gray-300 rounded-full py-2">2 วัน</button>
+                        <button type="button" data-days="3" data-price="2000" class="day-btn flex-1 bg-purple-500 text-white rounded-full py-2 shadow-md">3 วัน (เต็มคลาส)</button>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-500">ราคารวม</p>
+                    <p id="total-price" class="text-3xl font-bold text-purple-600">2,000 บาท</p>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <button id="confirm-registration-btn" type="submit" class="w-full bg-pink-500 text-white rounded-full py-3 text-lg font-bold shadow-lg hover:bg-pink-600 transition-colors">ยืนยันการลงทะเบียน</button>
+                    <button id="cancel-registration-btn" type="button" class="w-full bg-gray-200 text-gray-700 rounded-full py-3 hover:bg-gray-300 transition-colors">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Payment Card (Initially Hidden) -->
+        <div id="payment-card" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 relative hidden mx-auto">
+            <h2 class="text-2xl font-bold text-center text-gray-800">ชำระเงิน</h2>
+            <div id="payment-form-header" class="text-center text-sm text-gray-500 mt-1 mb-6"></div>
+            <div class="space-y-4">
+                <div id="payment-student-name" class="text-center font-bold text-lg text-gray-800"></div>
+                <div class="flex justify-center">
+                    <img id="qr-code-img" src="" alt="QR Code" class="rounded-lg shadow-md w-48 h-48">
+                </div>
+                <div class="text-center">
+                    <p class="text-lg font-semibold">ชำระเงินจำนวน</p>
+                    <p id="payment-amount" class="text-4xl font-bold text-purple-600"></p>
+                </div>
+                <div>
+                    <label for="slip-upload" class="block text-center text-sm font-medium text-gray-700 bg-gray-100 p-3 rounded-lg border-dashed border-2 border-gray-300 cursor-pointer hover:bg-gray-200">
+                        <span id="slip-upload-text">แนบสลิปโอน</span>
+                        <input id="slip-upload" type="file" class="hidden" accept="image/*">
+                    </label>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button id="pay-later-btn" class="w-full bg-yellow-400 text-white rounded-full py-3 font-bold shadow-lg hover:bg-yellow-500 transition-colors">ชำระภายหลัง</button>
+                    <button id="back-from-payment-btn" class="w-full bg-gray-300 text-gray-800 rounded-full py-3 font-bold shadow-lg hover:bg-gray-400 transition-colors hidden">กลับ</button>
+                    <button id="confirm-payment-btn" class="w-full bg-green-500 text-white rounded-full py-3 font-bold shadow-lg hover:bg-green-600 transition-colors">ยืนยัน</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Card (Initially Hidden) -->
+        <div id="login-card" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 relative hidden mx-auto">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">Login</h2>
+            <form id="login-form" class="space-y-6">
+                <input id="username" type="text" placeholder="Username" class="form-input text-center">
+                <input id="password" type="password" placeholder="Password" class="form-input text-center">
+                <div class="space-y-3 pt-2">
+                     <button type="submit" class="w-full bg-purple-600 text-white rounded-full py-3 text-lg font-bold shadow-lg hover:bg-purple-700 transition-colors">Login</button>
+                     <button id="register-coach-btn" type="button" class="w-full border-2 border-yellow-400 text-yellow-500 font-semibold rounded-full py-3 hover:bg-yellow-400 hover:text-white transition-colors">สมัครโค้ช</button>
+                     <button id="back-to-list-btn" type="button" class="w-full bg-gray-200 text-gray-700 rounded-full py-3 hover:bg-gray-300 transition-colors">Back</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Coach Registration Card (Initially Hidden) -->
+        <div id="coach-registration-card" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 relative hidden mx-auto">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">สมัครโค้ช</h2>
+            <form id="coach-registration-form" class="space-y-4">
+                <input id="coach-name" type="text" placeholder="ชื่อโค้ช" class="form-input" required>
+                <input id="coach-username" type="text" placeholder="Username" class="form-input" required>
+                <input id="coach-password" type="password" placeholder="Password" class="form-input" required>
+                <div class="space-y-3 pt-4">
+                    <button type="submit" class="w-full bg-green-500 text-white rounded-full py-3 font-bold shadow-lg hover:bg-green-600">ยืนยันการสมัคร</button>
+                    <button id="cancel-coach-registration-btn" type="button" class="w-full bg-gray-200 text-gray-700 rounded-full py-3 hover:bg-gray-300">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Admin Panel Card (Initially Hidden) -->
+        <div id="admin-panel-card" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-6 relative hidden mx-auto">
+            <header class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">ADMIN PANEL</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="notification-btn" class="text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        </button>
+                        <span id="notification-dot" class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 hidden"></span>
+                    </div>
+                    <button id="admin-back-btn" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors">กลับไปหน้าหลัก</button>
+                    <button id="admin-logout-btn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">ออกจากระบบ</button>
+                </div>
+            </header>
+            <nav id="admin-nav" class="bg-gray-100 p-2 rounded-full flex space-x-2 mb-6 overflow-x-auto">
+                <div data-target="manage-classes-view" class="admin-nav-item active flex-shrink-0">จัดการคลาสเรียน</div>
+                <div data-target="manage-coaches-view" class="admin-nav-item flex-shrink-0">จัดการโค้ช</div>
+                <div data-target="manage-students-view" class="admin-nav-item flex-shrink-0">จัดการนักเรียน</div>
+                <div data-target="settings-view" class="admin-nav-item flex-shrink-0">ตั้งค่า</div>
+            </nav>
+            <div id="admin-content">
+                 <!-- Manage Classes View -->
+                <div id="manage-classes-view" class="admin-view">
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-700">รายการคลาสเรียน</h3>
+                        <button id="create-class-btn" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center hover:bg-green-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                            สร้างคลาสเรียนใหม่
+                        </button>
+                    </div>
+                     <div class="overflow-x-auto bg-white rounded-lg shadow">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อคลาส</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน (คน)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ค่าเรียน</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-class-list-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Manage Students View -->
+                <div id="manage-students-view" class="admin-view hidden">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">รายชื่อนักเรียนทั้งหมด</h3>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ (ID)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เบอร์โทรผู้ปกครอง</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">แสดงโปรไฟล์</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-student-list-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+                 <!-- Manage Coaches View -->
+                <div id="manage-coaches-view" class="admin-view hidden">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">รายชื่อโค้ชทั้งหมด</h3>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อโค้ช</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">บัญชี</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-coach-list-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+                 <!-- Settings View -->
+                <div id="settings-view" class="admin-view hidden">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">ตั้งค่าระบบ</h3>
+                     <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+                        <form id="admin-settings-form" class="space-y-4">
+                            <div>
+                                <label class="font-semibold text-gray-600">เปลี่ยนรหัสผ่าน Admin</label>
+                                <div class="relative">
+                                    <input type="password" placeholder="รหัสผ่านใหม่" class="form-input mt-1 pr-10">
+                                    <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 password-toggle">
+                                       <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" /></svg>
+                                    </button>
+                                </div>
+                                <div class="relative">
+                                    <input type="password" placeholder="ยืนยันรหัสผ่านใหม่" class="form-input mt-1 pr-10">
+                                     <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 password-toggle">
+                                       <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-green-500 text-white rounded-full py-3 font-bold shadow-lg hover:bg-green-600">บันทึกการตั้งค่า</button>
+                        </form>
+                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add/Edit Class Card (Initially Hidden) -->
+        <div id="class-form-card" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-8 relative hidden mx-auto">
+             <div class="flex justify-between items-center mb-6">
+                <h2 id="class-form-title" class="text-2xl font-bold text-gray-800"></h2>
+             </div>
+             <form id="add-class-form" class="space-y-6">
+                <input type="hidden" id="class-id-input">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="flex flex-col items-center space-y-2">
+                        <label for="class-poster-upload" class="cursor-pointer">
+                            <img id="class-poster-preview" src="https://placehold.co/300x400/e2e8f0/94a3b8?text=Poster" alt="Class Poster" class="w-48 h-64 rounded-lg object-cover border-2 border-dashed border-gray-300">
+                        </label>
+                        <input type="file" id="class-poster-upload" class="hidden" accept="image/*">
+                        <p class="text-sm text-gray-500">รูปโปสเตอร์ (ถ้ามี)</p>
+                    </div>
+                    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2"><label class="font-semibold text-gray-600">ชื่อคลาส</label><input type="text" id="class-form-name" class="form-input mt-1" required></div>
+                        <div><label class="font-semibold text-gray-600">ราคาต่อคลาส</label><input type="number" id="class-form-price" class="form-input mt-1" required></div>
+                        <div><label class="font-semibold text-gray-600">รับกี่คน (สูงสุด)</label><input type="number" id="class-form-limit" class="form-input mt-1" required></div>
+                        <div><label class="font-semibold text-gray-600">เต็มคลาสกี่วัน</label><input type="number" id="class-form-fulldays" class="form-input mt-1"></div>
+                        <div><label class="font-semibold text-gray-600">ราคาต่อวัน</label><input type="number" id="class-form-dayprice" class="form-input mt-1"></div>
+                        <div><label class="font-semibold text-gray-600">ลงต่ำสุดได้กี่วัน</label><input type="number" id="class-form-mindays" class="form-input mt-1"></div>
+                        <div><label class="font-semibold text-gray-600">สถานที่เรียน</label><input type="text" id="class-form-location" class="form-input mt-1"></div>
+                        <div><label class="font-semibold text-gray-600">วันที่เรียน</label><input type="text" id="class-form-dates" class="form-input mt-1" placeholder="เช่น 15-17 ส.ค. 2568"></div>
+                        <div><label class="font-semibold text-gray-600">เวลาเรียน</label><input type="text" id="class-form-time" class="form-input mt-1" placeholder="เช่น 16:00 - 21:00"></div>
+                        <div class="md:col-span-2"><label id="coach-selector-label" class="font-semibold text-gray-600">เลือกโค้ช</label><select id="coach-selector" class="form-input mt-1"></select></div>
+                    </div>
+                </div>
+                <div id="add-class-student-list-container">
+                    <label class="font-semibold text-gray-600">เพิ่มนักเรียนในคลาส</label>
+                    <div class="mt-1 p-4 border rounded-lg max-h-48 overflow-y-auto space-y-2" id="add-class-student-list">
+                        <!-- Student list for adding to class will be populated here -->
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-between items-center">
+                    <div id="class-actions-left" class="flex space-x-3">
+                        <button id="finish-class-btn" type="button" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600 transition-colors hidden">จบคลาสเรียน</button>
+                        <button id="cancel-class-btn" type="button" class="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors hidden">ยกเลิกคลาส</button>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="cancel-add-class-btn" type="button" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">ยกเลิก</button>
+                        <button id="save-class-btn" type="submit" class="bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-colors">บันทึก</button>
+                    </div>
+                </div>
+             </form>
+        </div>
+
+        <!-- Coach Dashboard Card (Initially Hidden) -->
+        <div id="coach-dashboard-card" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-6 relative hidden mx-auto">
+             <header class="flex justify-between items-center mb-6">
+                <div class="flex items-center space-x-4">
+                    <img id="coach-dashboard-pic" src="" class="w-16 h-16 rounded-full object-cover">
+                    <div>
+                        <h2 id="coach-welcome-title" class="text-2xl font-bold text-gray-800"></h2>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="coach-notification-btn" class="text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        </button>
+                        <span id="coach-notification-dot" class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 hidden"></span>
+                    </div>
+                    <button id="coach-settings-btn" class="text-gray-500 hover:text-gray-700">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <button id="coach-logout-btn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">ออกจากระบบ</button>
+                </div>
+            </header>
+            <div id="coach-classes-view">
+                <h3 class="text-xl font-bold text-gray-700 mb-4">คลาสเรียนของคุณ</h3>
+                <div id="coach-class-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Coach's classes will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Coach Profile Edit Card (Initially Hidden) -->
+        <div id="coach-profile-edit-card" class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 relative hidden mx-auto">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">แก้ไขข้อมูลส่วนตัว</h2>
+            <form id="coach-profile-form" class="space-y-4">
+                 <div class="flex flex-col items-center">
+                    <label for="coach-photo-upload" class="cursor-pointer">
+                        <img id="coach-photo-preview" src="https://placehold.co/150x150/d1d5db/ffffff?text=+" alt="Coach Photo" class="w-24 h-24 rounded-full object-cover border-2 border-dashed border-gray-300">
+                    </label>
+                    <input type="file" id="coach-photo-upload" class="hidden" accept="image/*">
+                    <p class="text-sm text-gray-500 mt-2">เปลี่ยนรูปโปรไฟล์</p>
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">เปลี่ยนรหัสผ่าน</label>
+                    <div class="relative">
+                        <input type="password" id="coach-new-password" placeholder="รหัสผ่านใหม่" class="form-input mt-1 pr-10">
+                        <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 password-toggle">
+                           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" /></svg>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="coach-confirm-password" placeholder="ยืนยันรหัสผ่านใหม่" class="form-input mt-1 pr-10">
+                         <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 password-toggle">
+                           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">บัญชีธนาคาร</label>
+                    <input type="text" placeholder="ชื่อบัญชี" class="form-input mt-1">
+                    <input type="text" placeholder="หมายเลขพร้อมเพย์" class="form-input mt-1">
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button id="cancel-coach-edit-btn" type="button" class="w-full bg-gray-300 text-gray-800 rounded-full py-3 font-bold hover:bg-gray-400">ยกเลิก</button>
+                    <button type="submit" class="w-full bg-green-500 text-white rounded-full py-3 font-bold shadow-lg hover:bg-green-600">บันทึก</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Class Details Card (Initially Hidden) -->
+        <div id="class-details-card" class="w-full max-w-5xl bg-white rounded-2xl shadow-2xl p-6 relative hidden mx-auto">
+             <header class="flex justify-between items-center mb-4">
+                <h2 id="class-details-title" class="text-2xl font-bold text-gray-800"></h2>
+                <button id="back-to-admin-from-details-btn" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors">กลับ</button>
+            </header>
+            <div id="class-details-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-6 bg-gray-50 p-4 rounded-lg">
+                <!-- Summary will be populated here -->
+            </div>
+             <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูป</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ (ID)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ทีม</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวนเงิน</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สลิป</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="class-student-list-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Student list for the class will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+(function() { // Start of IIFE to encapsulate code
+    // --- Cloudinary Settings ---
+    const CLOUDINARY_CLOUD_NAME = "dzs7zbikj";
+    const CLOUDINARY_UPLOAD_PRESET = "coach_app_preset";
+    const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+    // --- DOM Elements ---
+    const studentListCard = document.getElementById('student-list-card');
+    const registrationFormCard = document.getElementById('registration-form-card');
+    const paymentCard = document.getElementById('payment-card');
+    const loginCard = document.getElementById('login-card');
+    const coachRegistrationCard = document.getElementById('coach-registration-card');
+    const adminPanelCard = document.getElementById('admin-panel-card');
+    const coachDashboardCard = document.getElementById('coach-dashboard-card');
+    const classFormCard = document.getElementById('class-form-card');
+    const coachProfileEditCard = document.getElementById('coach-profile-edit-card');
+    const classDetailsCard = document.getElementById('class-details-card');
+
+    // Main Page Header
+    const classMainImage = document.getElementById('class-main-image');
+    const classCoachName = document.getElementById('class-coach-name');
+    const prevClassBtn = document.getElementById('prev-class-btn');
+    const nextClassBtn = document.getElementById('next-class-btn');
+    const classNameEl = document.getElementById('class-name');
+    const classScheduleEl = document.getElementById('class-schedule');
+    const classPriceEl = document.getElementById('class-price');
+
+    const studentListDiv = document.getElementById('student-list');
+    const addStudentBtn = document.getElementById('add-student-btn');
+    const registrationForm = document.getElementById('registration-form');
+    const regFormHeader = document.getElementById('reg-form-header');
+    const cancelRegistrationBtn = document.getElementById('cancel-registration-btn');
+    const daysOptions = document.getElementById('days-options');
+    const totalPriceEl = document.getElementById('total-price');
+    const photoPreview = document.getElementById('photo-preview');
+    const studentPhotoUpload = document.getElementById('student-photo-upload');
+    
+    // Payment Card Elements
+    const paymentFormHeader = document.getElementById('payment-form-header');
+    const paymentStudentName = document.getElementById('payment-student-name');
+    const qrCodeImg = document.getElementById('qr-code-img');
+    const paymentAmount = document.getElementById('payment-amount');
+    const slipUpload = document.getElementById('slip-upload');
+    const slipUploadText = document.getElementById('slip-upload-text');
+    const payLaterBtn = document.getElementById('pay-later-btn');
+    const backFromPaymentBtn = document.getElementById('back-from-payment-btn');
+    const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const loginForm = document.getElementById('login-form');
+    const backToListBtn = document.getElementById('back-to-list-btn');
+    const registerCoachBtn = document.getElementById('register-coach-btn');
+    const coachRegistrationForm = document.getElementById('coach-registration-form');
+    const cancelCoachRegistrationBtn = document.getElementById('cancel-coach-registration-btn');
+    
+    const adminBackBtn = document.getElementById('admin-back-btn');
+    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    const adminNav = document.getElementById('admin-nav');
+    const adminStudentListBody = document.getElementById('admin-student-list-body');
+    const adminCoachListBody = document.getElementById('admin-coach-list-body');
+    const adminClassListBody = document.getElementById('admin-class-list-body');
+    const notificationBtn = document.getElementById('notification-btn');
+    const notificationDot = document.getElementById('notification-dot');
+    
+    const coachWelcomeTitle = document.getElementById('coach-welcome-title');
+    const coachDashboardPic = document.getElementById('coach-dashboard-pic');
+    const coachSummary = document.getElementById('coach-summary');
+    const coachClassList = document.getElementById('coach-class-list');
+    const coachLogoutBtn = document.getElementById('coach-logout-btn');
+    const coachSettingsBtn = document.getElementById('coach-settings-btn');
+    const coachNotificationBtn = document.getElementById('coach-notification-btn');
+    const coachNotificationDot = document.getElementById('coach-notification-dot');
+    const cancelCoachEditBtn = document.getElementById('cancel-coach-edit-btn');
+    const coachProfileForm = document.getElementById('coach-profile-form');
+    const coachPhotoUpload = document.getElementById('coach-photo-upload');
+    const coachPhotoPreview = document.getElementById('coach-photo-preview');
+
+    // Add/Edit Class Card Elements
+    const createClassBtn = document.getElementById('create-class-btn');
+    const classFormTitle = document.getElementById('class-form-title');
+    const classIdInput = document.getElementById('class-id-input');
+    const cancelAddClassBtn = document.getElementById('cancel-add-class-btn');
+    const saveClassBtn = document.getElementById('save-class-btn');
+    const finishClassBtn = document.getElementById('finish-class-btn');
+    const cancelClassBtn = document.getElementById('cancel-class-btn');
+    const coachSelector = document.getElementById('coach-selector');
+    const coachSelectorLabel = document.getElementById('coach-selector-label');
+    const addClassStudentListContainer = document.getElementById('add-class-student-list-container');
+    const addClassStudentList = document.getElementById('add-class-student-list');
+    
+    // Class Details Card Elements
+    const classDetailsTitle = document.getElementById('class-details-title');
+    const classDetailsSummary = document.getElementById('class-details-summary');
+    const classStudentListBody = document.getElementById('class-student-list-body');
+    const backToAdminFromDetailsBtn = document.getElementById('back-to-admin-from-details-btn');
+
+
+    let selectedDays = 3;
+    let selectedPrice = 2000;
+    let uploadedImageBase64 = null;
+    let currentStudentData = null;
+    let currentClassIndex = 0;
+    let sortedClasses = [];
+    let hasNotifications = false;
+    let loggedInCoach = null;
+    let coachSummaryChart = null;
+    const PROMPT_PAY_ID = "0812345678"; // Example PromptPay ID
+
+    // --- MOCKED DATA for PREVIEW ---
+    let mockStudentData = [
+        { id: "A1B2C", classId: "CLS001", Name: "อคิณ", Team: "YRK", Price: 2000, Status: "ชำระเงินแล้ว", ProfileImage: "https://i.pravatar.cc/150?u=ishin", Phone: "081-111-1111", isProfileVisible: true, slipImage: "https://placehold.co/400x600/a855f7/white?text=Slip1" },
+        { id: "D3E4F", classId: "CLS001", Name: "ลลิณ", Team: "NKR", Price: 1600, Status: "ยังไม่ชำระเงิน", ProfileImage: "https://i.pravatar.cc/150?u=lalin", Phone: "082-222-2222", isProfileVisible: false, slipImage: null },
+        { id: "G5H6I", classId: "CLS002", Name: "มานี", Team: "YRK", Price: 1800, Status: "รอตรวจสอบ", ProfileImage: "https://i.pravatar.cc/150?u=manee", Phone: "083-333-3333", isProfileVisible: true, slipImage: "https://placehold.co/400x600/ec4899/white?text=Slip2" },
+    ];
+    let mockCoachData = [
+        { id: 'COACH01', name: 'โค้ชตู่', user: 'coach_tu', pass: '1234', profileImage: 'https://i.pravatar.cc/150?u=coach_tu' },
+        { id: 'COACH02', name: 'โค้ชสมศักดิ์', user: 'coach_somsak', pass: '1234', profileImage: 'https://i.pravatar.cc/150?u=coach_somsak' }
+    ];
+    let mockClassData = [
+        { id: 'CLS001', name: 'NONGKHAI CLASS', coachId: 'COACH01', studentLimit: 20, price: 2000, dayPrice: 800, schedule: 'ศุกร์, เสาร์, อาทิตย์ | 15-17 ส.ค. 2568<br>เวลา 16.00-21.00 น.', createdAt: new Date('2025-01-01'), status: 'active', posterImage: 'https://placehold.co/300x400/a855f7/white?text=Nongkhai' },
+        { id: 'CLS002', name: 'UDONTHANI CLASS', coachId: 'COACH02', studentLimit: 15, price: 1800, dayPrice: 900, schedule: 'เสาร์, อาทิตย์ | 23-24 ส.ค. 2568<br>เวลา 09.00-16.00 น.', createdAt: new Date('2025-01-15'), status: 'canceled' },
+        { id: 'CLS003', name: 'ONLINE CLASS', coachId: 'COACH01', studentLimit: 50, price: 1500, dayPrice: 500, schedule: 'ทุกวันพุธ | เริ่ม 1 ก.ย. 2568<br>เวลา 19.00-21.00 น.', createdAt: new Date('2025-02-01'), status: 'finished' },
+        { id: 'CLS004', name: 'DELETED CLASS', coachId: 'COACH01', studentLimit: 10, price: 1000, dayPrice: 500, schedule: 'TBA', createdAt: new Date('2025-01-05'), status: 'deleted' },
+    ];
+    
+    function generateUniqueId(prefix, dataArray) {
+        let id;
+        const existingIds = dataArray.map(item => item.id);
+        do {
+            const randomPart = (prefix === 'CLS' 
+                ? Math.random().toString().substring(2, 5)
+                : Math.random().toString(36).substring(2, 7)
+            ).toUpperCase();
+            id = prefix + randomPart;
+        } while (existingIds.includes(id));
+        return id;
+    }
+
+    function showCard(cardToShow) {
+        [studentListCard, registrationFormCard, paymentCard, loginCard, adminPanelCard, coachRegistrationCard, coachDashboardCard, classFormCard, coachProfileEditCard, classDetailsCard].forEach(card => card.classList.add('hidden'));
+        cardToShow.classList.remove('hidden');
+    }
+
+    function getStatusIcon(status) {
+        switch(status) {
+            case "ชำระเงินแล้ว":
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+            case "รอตรวจสอบ":
+                 return `<svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>`;
+            case "ยังไม่ชำระเงิน":
+            default:
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+        }
+    }
+
+    function displayStudents(students) {
+        studentListDiv.innerHTML = '';
+        if (!students || students.length === 0) {
+            studentListDiv.innerHTML = `<p class="text-center text-gray-500">ยังไม่มีนักเรียนลงทะเบียน</p>`;
+            return;
+        }
+        
+        students.forEach(student => {
+            const isVisible = student.isProfileVisible !== false;
+            
+            const studentItem = document.createElement('div');
+            studentItem.className = 'flex items-center bg-gray-50 p-3 rounded-xl shadow-sm';
+            
+            let statusHTML = getStatusIcon(student.Status);
+            if (student.Status === 'ยังไม่ชำระเงิน') {
+                statusHTML = `<button class="payment-trigger cursor-pointer" data-student-id="${student.id}" title="ชำระเงิน">${statusHTML}</button>`;
+            }
+            
+            const profileImageSrc = isVisible ? student.ProfileImage : 'https://placehold.co/150x150/d1d5db/ffffff?text=?';
+            let displayName, displayTeam;
+
+            if (isVisible) {
+                displayName = student.Name;
+                displayTeam = student.Team ? `(${student.Team})` : '';
+            } else {
+                displayName = student.Name ? student.Name.charAt(0) + 'xxx' : 'ไม่ระบุ';
+                displayTeam = student.Team ? `(${student.Team.charAt(0)}xxx)` : '';
+            }
+
+            studentItem.innerHTML = `
+                <img src="${profileImageSrc}" alt="${displayName}" class="w-12 h-12 rounded-full object-cover mr-4">
+                <div class="flex-grow">
+                    <p class="font-bold text-gray-800">${displayName} <span class="font-normal text-gray-500">${displayTeam}</span></p>
+                    <p class="text-xs text-gray-500 font-mono">ID: ${student.id}</p>
+                </div>
+                <div class="text-right">
+                    ${statusHTML}
+                </div>`;
+            studentListDiv.appendChild(studentItem);
+        });
+    }
+    
+    function displayAdminStudents(students) {
+        adminStudentListBody.innerHTML = '';
+        if (!students || students.length === 0) return;
+        
+        students.forEach(student => {
+            const row = document.createElement('tr');
+            const visibilityIcon = student.isProfileVisible !== false
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 .527-1.79 1.474-3.434 2.695-4.801M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.163-4.163l-4.242-4.242-1.414 1.414 4.242 4.242a1.5 1.5 0 010 2.121l-4.242 4.242 1.414 1.414 4.242-4.242a1.5 1.5 0 010-2.121zM3.837 8.175L1.414 5.757l1.414-1.414 2.423 2.423" /></svg>`;
+
+            row.innerHTML = `
+                 <td class="px-6 py-4 whitespace-nowrap"><img src="${student.ProfileImage}" class="w-10 h-10 rounded-full object-cover"></td>
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${student.Name}<div class="text-xs text-gray-400 font-mono">${student.id}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">${student.Phone || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${visibilityIcon}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
+                    <button class="text-yellow-600 hover:text-yellow-900" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                    <button class="text-red-600 hover:text-red-900" title="ลบ"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>
+                </td>
+            `;
+            adminStudentListBody.appendChild(row);
+        });
+    }
+    
+    function displayAdminCoaches(coaches) {
+        adminCoachListBody.innerHTML = '';
+        if (!coaches || coaches.length === 0) return;
+        coaches.forEach(coach => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap"><img src="${coach.profileImage}" class="w-10 h-10 rounded-full object-cover"></td>
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                    <div>${coach.name}</div>
+                    <div class="text-xs text-gray-400 font-mono">${coach.id}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">${coach.user}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><button class="text-blue-600 hover:text-blue-800">ดูบัญชี</button></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
+                    <button class="text-yellow-600 hover:text-yellow-900" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                    <button class="text-red-600 hover:text-red-900" title="ลบ"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>
+                </td>
+            `;
+            adminCoachListBody.appendChild(row);
+        });
+    }
+
+    function displayAdminClasses(classes) {
+        adminClassListBody.innerHTML = '';
+        const classesToDisplay = classes.filter(c => c.status !== 'deleted');
+        if (classesToDisplay.length === 0) return;
+
+        classesToDisplay.forEach(c => {
+            const enrolled = mockStudentData.filter(s => s.classId === c.id).length;
+            const row = document.createElement('tr');
+            if (c.status === 'canceled') {
+                row.className = 'bg-gray-200 text-gray-500';
+            } else if (c.status === 'finished') {
+                row.className = 'bg-green-100';
+            }
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap font-medium">
+                    <div>
+                        ${c.name}
+                        ${c.status === 'canceled' ? '<span class="text-xs text-red-500 font-bold ml-2">(คลาสถูกยกเลิก)</span>' : ''}
+                        ${c.status === 'finished' ? '<span class="text-xs text-green-700 font-bold ml-2">(จบคลาสแล้ว)</span>' : ''}
+                    </div>
+                    <div class="text-xs text-gray-400 font-mono">${c.id}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">${enrolled}/${c.studentLimit}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${new Intl.NumberFormat().format(c.price)} (${c.dayPrice}/วัน)</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
+                    <button class="view-class-students-btn text-blue-600 hover:text-blue-900" data-class-id="${c.id}" title="ดูรายชื่อ"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg></button>
+                    <button class="edit-class-btn text-yellow-600 hover:text-yellow-900" data-class-id="${c.id}" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                </td>
+            `;
+            adminClassListBody.appendChild(row);
+        });
+    }
+
+    function displayCoachDashboard(coach) {
+        loggedInCoach = coach;
+        coachWelcomeTitle.innerHTML = `ยินดีต้อนรับ, ${coach.name} <span class="text-sm font-mono text-gray-500">ID: ${coach.id}</span>`;
+        coachDashboardPic.src = coach.profileImage;
+        const coachClasses = mockClassData.filter(c => c.coachId === coach.id && c.status !== 'deleted');
+        
+        // Display Class Cards
+        coachClassList.innerHTML = '';
+        if (coachClasses.length === 0) {
+            coachClassList.innerHTML = `<p class="text-gray-500 col-span-full">คุณยังไม่มีคลาสที่ได้รับมอบหมาย</p>`;
+            return;
+        }
+        coachClasses.forEach(c => {
+            const enrolled = mockStudentData.filter(s => s.classId === c.id).length;
+            const paidStudents = mockStudentData.filter(s => s.classId === c.id && s.Status === 'ชำระเงินแล้ว');
+            const classIncome = paidStudents.reduce((sum, s) => sum + s.Price, 0);
+
+            const classCard = document.createElement('div');
+            classCard.className = `p-4 rounded-lg shadow ${c.status === 'finished' ? 'bg-green-100' : (c.status === 'canceled' ? 'bg-gray-200' : 'bg-gray-100')}`;
+            classCard.innerHTML = `
+                <h4 class="font-bold text-lg text-purple-700">${c.name} 
+                    ${c.status === 'finished' ? '<span class="text-xs text-green-700">(จบคลาสแล้ว)</span>' : ''}
+                    ${c.status === 'canceled' ? '<span class="text-xs text-red-700">(ลบคลาสแล้ว)</span>' : ''}
+                </h4>
+                <p class="text-gray-600">จำนวน: ${enrolled}/${c.studentLimit} คน</p>
+                <p class="text-gray-600">รายได้ทั้งหมด: ${new Intl.NumberFormat().format(enrolled * c.price)} บาท</p>
+                <p class="text-green-600">จ่ายแล้ว: ${new Intl.NumberFormat().format(classIncome)} บาท (${paidStudents.length} คน)</p>
+                <div class="flex space-x-2 mt-3">
+                    <button class="manage-class-btn-coach w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600" data-class-id="${c.id}">จัดการคลาส</button>
+                    ${c.status === 'active' ? `<button class="finish-class-btn-coach w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600" data-class-id="${c.id}">จบคลาสเรียน</button>` : ''}
+                </div>
+            `;
+            coachClassList.appendChild(classCard);
+        });
+        showCard(coachDashboardCard);
+    }
+
+    function updateClassDisplay() {
+        sortedClasses = [...mockClassData].filter(c => c.status === 'active').sort((a, b) => a.createdAt - b.createdAt);
+        if (sortedClasses.length === 0) {
+            classNameEl.textContent = "ไม่มีคลาสเรียน";
+            classScheduleEl.innerHTML = "";
+            classPriceEl.textContent = "";
+            studentListDiv.innerHTML = `<p class="text-center text-gray-500">ยังไม่มีคลาสเรียนที่เปิดรับสมัคร</p>`;
+            prevClassBtn.classList.add('hidden');
+            nextClassBtn.classList.add('hidden');
+            return;
+        }
+        currentClassIndex = currentClassIndex >= sortedClasses.length ? 0 : currentClassIndex;
+        const currentClass = sortedClasses[currentClassIndex];
+        if (!currentClass) return;
+
+        const coach = mockCoachData.find(c => c.id === currentClass.coachId);
+        
+        classCoachName.textContent = coach ? coach.name : 'COACH';
+        classNameEl.textContent = currentClass.name;
+        classScheduleEl.innerHTML = currentClass.schedule;
+        classPriceEl.textContent = `คลาสละ ${new Intl.NumberFormat().format(currentClass.price)} บาท`;
+        classMainImage.src = currentClass.posterImage || 'https://placehold.co/150x150/a855f7/white?text=Coach';
+
+
+        const studentsInClass = mockStudentData.filter(s => s.classId === currentClass.id);
+        displayStudents(studentsInClass);
+
+        if (sortedClasses.length > 1) {
+            prevClassBtn.classList.remove('hidden');
+            nextClassBtn.classList.remove('hidden');
+        } else {
+            prevClassBtn.classList.add('hidden');
+            nextClassBtn.classList.add('hidden');
+        }
+    }
+
+    function loadAllData() {
+        studentListDiv.innerHTML = `<div id="list-loader" class="flex justify-center items-center h-full"><div class="loader"></div></div>`;
+        setTimeout(() => {
+            updateClassDisplay();
+            displayAdminStudents(mockStudentData);
+            displayAdminCoaches(mockCoachData);
+            displayAdminClasses(mockClassData);
+            hasNotifications = mockStudentData.some(s => s.Status === 'รอตรวจสอบ');
+            updateNotificationDot();
+        }, 1000);
+    }
+    
+    function saveRegistration(data) {
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        setTimeout(() => {
+            const existingStudentIndex = mockStudentData.findIndex(s => s.id === data.id);
+            if (existingStudentIndex > -1) {
+                mockStudentData[existingStudentIndex] = data;
+            } else {
+                mockStudentData.push(data);
+            }
+            if (data.Status === 'รอตรวจสอบ') {
+                hasNotifications = true;
+                updateNotificationDot();
+            }
+            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว (จำลอง)', timer: 2000, showConfirmButton: false });
+            showCard(studentListCard);
+            loadAllData();
+        }, 1500);
+    }
+    
+    function setupPaymentPage(studentData, isNewStudent) {
+        currentStudentData = studentData;
+        const studentClass = mockClassData.find(c => c.id === studentData.classId);
+        
+        let displayName = studentData.Name;
+        if (!isNewStudent && !studentData.isProfileVisible) {
+             displayName = studentData.Name ? studentData.Name.charAt(0) + 'xxx' : 'ไม่ระบุ';
+        }
+        
+        paymentFormHeader.innerHTML = `<p>${studentClass.name}</p><p>${studentClass.schedule.replace('<br>', ' | ')}</p>`;
+        paymentStudentName.textContent = displayName;
+        paymentAmount.textContent = `${new Intl.NumberFormat().format(studentData.Price)} บาท`;
+        qrCodeImg.src = `https://promptpay.io/${PROMPT_PAY_ID}/${studentData.Price}.png`;
+        slipUpload.value = '';
+        slipUploadText.textContent = 'แนบสลิปโอน';
+        slipUploadText.classList.remove('text-green-600');
+        
+        if (isNewStudent) {
+            payLaterBtn.classList.remove('hidden');
+            backFromPaymentBtn.classList.add('hidden');
+        } else {
+            payLaterBtn.classList.add('hidden');
+            backFromPaymentBtn.classList.remove('hidden');
+        }
+        
+        showCard(paymentCard);
+    }
+
+    function updateNotificationDot() {
+        if (hasNotifications) {
+            notificationDot.classList.remove('hidden');
+            coachNotificationDot.classList.remove('hidden');
+        } else {
+            notificationDot.classList.add('hidden');
+            coachNotificationDot.classList.add('hidden');
+        }
+    }
+
+    // --- Event Listeners ---
+    
+    document.addEventListener('DOMContentLoaded', loadAllData);
+    
+    addStudentBtn.addEventListener('click', () => {
+        const currentClass = sortedClasses[currentClassIndex];
+        regFormHeader.innerHTML = `<p>${currentClass.name}</p><p>${currentClass.schedule.replace('<br>', ' | ')}</p>`;
+        registrationForm.reset();
+        photoPreview.src = 'https://placehold.co/150x150/d1d5db/ffffff?text=+';
+        uploadedImageBase64 = null;
+        document.getElementById('profile-visible').checked = true;
+        document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('bg-purple-500', 'text-white', 'shadow-md'));
+        const defaultBtn = document.querySelector('.day-btn[data-days="3"][data-price="2000"]');
+        if (defaultBtn) {
+            defaultBtn.classList.add('bg-purple-500', 'text-white', 'shadow-md');
+        }
+        totalPriceEl.textContent = '2,000 บาท';
+        selectedDays = 3;
+        selectedPrice = 2000;
+        showCard(registrationFormCard);
+    });
+    
+    cancelRegistrationBtn.addEventListener('click', () => showCard(studentListCard));
+
+    daysOptions.addEventListener('click', (e) => {
+        const button = e.target.closest('.day-btn');
+        if (button) {
+            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('bg-purple-500', 'text-white', 'shadow-md'));
+            button.classList.add('bg-purple-500', 'text-white', 'shadow-md');
+            selectedDays = parseInt(button.dataset.days);
+            selectedPrice = parseInt(button.dataset.price);
+            totalPriceEl.textContent = `${new Intl.NumberFormat().format(selectedPrice)} บาท`;
+        }
+    });
+
+    studentPhotoUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                photoPreview.src = reader.result;
+                uploadedImageBase64 = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    registrationForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const studentName = document.getElementById('student-name').value.trim();
+        const phone = document.getElementById('parent-phone').value.trim();
+
+        if (!studentName || !phone) {
+            Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกชื่อเล่น และเบอร์โทรผู้ปกครอง', 'warning');
+            return;
+        }
+        
+        const newStudentData = {
+            id: generateUniqueId('S', mockStudentData),
+            classId: sortedClasses[currentClassIndex].id,
+            Name: studentName,
+            Team: document.getElementById('student-team').value.trim(),
+            Phone: phone,
+            isProfileVisible: document.getElementById('profile-visible').checked,
+            Days: selectedDays,
+            Price: selectedPrice,
+            ProfileImage: uploadedImageBase64 || `https://i.pravatar.cc/150?u=${encodeURIComponent(studentName)}`
+        };
+
+        setupPaymentPage(newStudentData, true); // True for new student
+    });
+    
+    payLaterBtn.addEventListener('click', () => {
+        if (currentStudentData) {
+            currentStudentData.Status = "ยังไม่ชำระเงิน";
+            saveRegistration(currentStudentData);
+        }
+    });
+
+    confirmPaymentBtn.addEventListener('click', () => {
+        if (!slipUpload.files || slipUpload.files.length === 0) {
+            Swal.fire('กรุณาแนบสลิป', 'โปรดอัปโหลดสลิปการโอนเงินเพื่อยืนยัน', 'warning');
+            return;
+        }
+        if (currentStudentData) {
+            currentStudentData.Status = "รอตรวจสอบ";
+            saveRegistration(currentStudentData);
+        }
+    });
+    
+    slipUpload.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            slipUploadText.textContent = e.target.files[0].name;
+            slipUploadText.classList.add('text-green-600');
+        } else {
+            slipUploadText.textContent = 'แนบสลิปโอน';
+            slipUploadText.classList.remove('text-green-600');
+        }
+    });
+    
+    studentListDiv.addEventListener('click', (e) => {
+        const trigger = e.target.closest('.payment-trigger');
+        if (!trigger) return;
+        
+        const studentId = trigger.dataset.studentId;
+        const studentToPay = mockStudentData.find(s => s.id === studentId);
+        
+        if (studentToPay) {
+            setupPaymentPage(studentToPay, false); // False for existing student
+        }
+    });
+    
+    backFromPaymentBtn.addEventListener('click', () => showCard(studentListCard));
+
+    // Class Navigation
+    nextClassBtn.addEventListener('click', () => {
+        currentClassIndex = (currentClassIndex + 1) % sortedClasses.length;
+        updateClassDisplay();
+    });
+    prevClassBtn.addEventListener('click', () => {
+        currentClassIndex = (currentClassIndex - 1 + sortedClasses.length) % sortedClasses.length;
+        updateClassDisplay();
+    });
+
+
+    // --- Admin & Coach Section Listeners ---
+    settingsBtn.addEventListener('click', () => showCard(loginCard));
+    backToListBtn.addEventListener('click', () => showCard(studentListCard));
+    adminBackBtn.addEventListener('click', () => showCard(studentListCard));
+    
+    const logout = () => {
+        loginForm.reset();
+        loggedInCoach = null;
+        showCard(studentListCard);
+    };
+    adminLogoutBtn.addEventListener('click', logout);
+    coachLogoutBtn.addEventListener('click', logout);
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+        
+        if (user === 'admin' && pass === '1234') {
+            showCard(adminPanelCard);
+            return;
+        }
+        
+        const foundCoach = mockCoachData.find(coach => coach.user === user && coach.pass === pass);
+        if (foundCoach) {
+            displayCoachDashboard(foundCoach);
+        } else {
+            Swal.fire('Login Failed', 'Incorrect username or password', 'error');
+        }
+    });
+
+    adminNav.addEventListener('click', (e) => {
+        const target = e.target.closest('.admin-nav-item');
+        if (target) {
+            const targetId = target.dataset.target;
+            adminNav.querySelectorAll('.admin-nav-item').forEach(tab => tab.classList.remove('active'));
+            target.classList.add('active');
+            document.querySelectorAll('.admin-view').forEach(view => {
+                view.id === targetId ? view.classList.remove('hidden') : view.classList.add('hidden');
+            });
+        }
+    });
+    
+    registerCoachBtn.addEventListener('click', () => showCard(coachRegistrationCard));
+    cancelCoachRegistrationBtn.addEventListener('click', () => showCard(loginCard));
+    
+    coachRegistrationForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('coach-name').value.trim();
+        const user = document.getElementById('coach-username').value.trim();
+        const pass = document.getElementById('coach-password').value.trim();
+        
+        if (!name || !user || !pass) {
+            Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลทั้งหมด', 'warning');
+            return;
+        }
+        
+        const newCoach = {
+            id: generateUniqueId('COACH', mockCoachData),
+            name: name,
+            user: user,
+            pass: pass,
+            profileImage: `https://i.pravatar.cc/150?u=${user}`
+        };
+        mockCoachData.push(newCoach);
+        
+        Swal.fire('สมัครสำเร็จ!', 'คุณสามารถใช้ Username และ Password นี้เพื่อเข้าสู่ระบบได้เลย', 'success');
+        coachRegistrationForm.reset();
+        displayAdminCoaches(mockCoachData);
+        showCard(loginCard);
+    });
+
+    // New Listeners for Add/Edit Class Card
+    createClassBtn.addEventListener('click', () => {
+        classFormTitle.textContent = "สร้างคลาสเรียนใหม่";
+        document.getElementById('add-class-form').reset();
+        classIdInput.value = '';
+        finishClassBtn.classList.add('hidden');
+        cancelClassBtn.classList.add('hidden');
+        addClassStudentListContainer.classList.remove('hidden');
+        coachSelectorLabel.textContent = "เลือกโค้ช";
+        
+        coachSelector.innerHTML = mockCoachData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        addClassStudentList.innerHTML = mockStudentData.map(s => `
+            <label class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100">
+                <input type="checkbox" class="form-check-input h-5 w-5 rounded">
+                <img src="${s.ProfileImage}" class="w-8 h-8 rounded-full object-cover">
+                <span>${s.Name} ${s.Team ? `(${s.Team})` : ''}</span>
+            </label>
+        `).join('');
+        showCard(classFormCard);
+    });
+
+    adminClassListBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-class-btn');
+        const viewBtn = e.target.closest('.view-class-students-btn');
+
+        if (editBtn) {
+            const classId = editBtn.dataset.classId;
+            const classData = mockClassData.find(c => c.id === classId);
+            if (classData) {
+                classFormTitle.textContent = `แก้ไขคลาสเรียน: ${classData.name}`;
+                classIdInput.value = classData.id;
+                document.getElementById('class-form-name').value = classData.name;
+                document.getElementById('class-form-price').value = classData.price;
+                document.getElementById('class-form-limit').value = classData.studentLimit;
+                // ... populate other fields ...
+                finishClassBtn.classList.remove('hidden');
+                cancelClassBtn.classList.remove('hidden');
+                showCard(classFormCard);
+            }
+        }
+        if (viewBtn) {
+            const classId = viewBtn.dataset.classId;
+            const classData = mockClassData.find(c => c.id === classId);
+            if(classData) {
+                displayClassDetails(classData);
+            }
+        }
+    });
+
+    cancelAddClassBtn.addEventListener('click', () => {
+        if (loggedInCoach) {
+            showCard(coachDashboardCard);
+        } else {
+            showCard(adminPanelCard);
+        }
+    });
+
+    saveClassBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        Swal.fire('สำเร็จ!', 'คลาสเรียนถูกบันทึกแล้ว (จำลอง)', 'success');
+        if (loggedInCoach) {
+            showCard(coachDashboardCard);
+        } else {
+            showCard(adminPanelCard);
+        }
+    });
+
+    cancelClassBtn.addEventListener('click', async () => {
+        const { value: password } = await Swal.fire({
+            title: 'ยืนยันการยกเลิกคลาส',
+            input: 'password',
+            inputLabel: 'กรุณากรอกรหัสผ่าน Admin เพื่อยืนยัน',
+            inputPlaceholder: 'Enter your password',
+            inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+            showCancelButton: true,
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก',
+        });
+
+        if (password === '1234') { // Mock password check
+            const classId = classIdInput.value;
+            const classIndex = mockClassData.findIndex(c => c.id === classId);
+            if (classIndex > -1) {
+                mockClassData[classIndex].status = 'canceled';
+                Swal.fire('สำเร็จ!', 'คลาสถูกยกเลิกแล้ว', 'success');
+                showCard(adminPanelCard);
+                loadAllData();
+            }
+        } else if (password) {
+            Swal.fire('รหัสผ่านไม่ถูกต้อง!', '', 'error');
+        }
+    });
+    
+    finishClassBtn.addEventListener('click', () => {
+        const classId = classIdInput.value;
+        const classIndex = mockClassData.findIndex(c => c.id === classId);
+        if(classIndex > -1){
+            mockClassData[classIndex].status = 'finished';
+            Swal.fire('สำเร็จ!', 'คลาสเรียนถูกปิดแล้ว', 'success');
+            showCard(adminPanelCard);
+            loadAllData();
+        }
+    });
+
+    notificationBtn.addEventListener('click', () => {
+        hasNotifications = false;
+        updateNotificationDot();
+        Swal.fire('ไม่มีการแจ้งเตือนใหม่', 'คุณได้ตรวจสอบการแจ้งเตือนทั้งหมดแล้ว', 'info');
+    });
+    
+    coachNotificationBtn.addEventListener('click', () => {
+        hasNotifications = false;
+        updateNotificationDot();
+        Swal.fire('ไม่มีการแจ้งเตือนใหม่', 'คุณได้ตรวจสอบการแจ้งเตือนทั้งหมดแล้ว', 'info');
+    });
+
+    coachClassList.addEventListener('click', (e) => {
+        const manageBtn = e.target.closest('.manage-class-btn-coach');
+        const finishBtn = e.target.closest('.finish-class-btn-coach');
+
+        if(manageBtn) {
+            const classId = manageBtn.dataset.classId;
+            const classData = mockClassData.find(c => c.id === classId);
+            if (classData) {
+                classFormTitle.textContent = "จัดการคลาสเรียนของฉัน";
+                classIdInput.value = classData.id;
+                document.getElementById('class-form-name').value = classData.name;
+                document.getElementById('class-form-price').value = classData.price;
+                document.getElementById('class-form-limit').value = classData.studentLimit;
+                
+                coachSelectorLabel.textContent = "มอบหมายให้โค้ชคนใหม่";
+                coachSelector.innerHTML = mockCoachData
+                    .filter(c => c.id !== loggedInCoach.id)
+                    .map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+                addClassStudentListContainer.classList.add('hidden');
+                finishClassBtn.classList.add('hidden');
+                cancelClassBtn.classList.add('hidden');
+                showCard(classFormCard);
+            }
+        }
+
+        if(finishBtn) {
+            const classId = finishBtn.dataset.classId;
+            const classIndex = mockClassData.findIndex(c => c.id === classId);
+            if(classIndex > -1){
+                mockClassData[classIndex].status = 'finished';
+                Swal.fire('สำเร็จ!', 'คลาสเรียนถูกปิดแล้ว', 'success');
+                displayCoachDashboard(loggedInCoach);
+            }
+        }
+    });
+    
+    coachSettingsBtn.addEventListener('click', () => {
+        coachPhotoPreview.src = loggedInCoach.profileImage;
+        showCard(coachProfileEditCard);
+    });
+
+    cancelCoachEditBtn.addEventListener('click', () => {
+        showCard(coachDashboardCard);
+    });
+
+    coachProfileForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        Swal.fire('สำเร็จ!', 'ข้อมูลถูกบันทึกแล้ว (จำลอง)', 'success');
+        showCard(coachDashboardCard);
+    });
+
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const input = e.currentTarget.previousElementSibling;
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+        });
+    });
+
+    backToAdminFromDetailsBtn.addEventListener('click', () => {
+        showCard(adminPanelCard);
+    });
+
+    function displayClassDetails(classData) {
+        classDetailsTitle.textContent = `รายชื่อนักเรียนในคลาส : ${classData.name}`;
+        const studentsInClass = mockStudentData.filter(s => s.classId === classData.id);
+        
+        let paidCount = 0;
+        let paidSum = 0;
+        let unpaidCount = 0;
+        let unpaidSum = 0;
+
+        studentsInClass.forEach(s => {
+            if(s.Status === 'ชำระเงินแล้ว') {
+                paidCount++;
+                paidSum += s.Price;
+            } else {
+                unpaidCount++;
+                unpaidSum += s.Price;
+            }
+        });
+
+        classDetailsSummary.innerHTML = `
+            <div>
+                <p class="text-sm font-semibold text-gray-500">ลงทะเบียนแล้ว</p>
+                <p class="text-2xl font-bold text-gray-800">${studentsInClass.length}/${classData.studentLimit} คน</p>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-500">จ่ายแล้ว</p>
+                <p class="text-2xl font-bold text-green-500">${paidCount} คน (${new Intl.NumberFormat().format(paidSum)} บาท)</p>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-500">ยังไม่จ่าย</p>
+                <p class="text-2xl font-bold text-red-500">${unpaidCount} คน (${new Intl.NumberFormat().format(unpaidSum)} บาท)</p>
+            </div>
+        `;
+
+        classStudentListBody.innerHTML = '';
+        studentsInClass.forEach(s => {
+            const row = document.createElement('tr');
+            const statusClass = s.Status === "ชำระเงินแล้ว" ? 'text-green-600' : s.Status === "รอตรวจสอบ" ? 'text-blue-600' : 'text-red-600';
+            const slipButton = s.slipImage 
+                ? `<button class="view-slip-btn text-blue-600 hover:text-blue-900" data-slip-image="${s.slipImage}"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" /></svg></button>`
+                : `<span>-</span>`;
+
+            row.innerHTML = `
+                <td class="px-4 py-2 whitespace-nowrap"><img src="${s.ProfileImage}" class="w-10 h-10 rounded-full object-cover"></td>
+                <td class="px-4 py-2 whitespace-nowrap font-medium text-gray-900">${s.Name} <span class="text-xs text-gray-400 font-mono">${s.id}</span></td>
+                <td class="px-4 py-2 whitespace-nowrap text-gray-700 font-semibold">${s.Team || '-'}</td>
+                <td class="px-4 py-2 whitespace-nowrap font-semibold ${statusClass}">${s.Status}</td>
+                <td class="px-4 py-2 whitespace-nowrap text-gray-700 font-semibold">${new Intl.NumberFormat().format(s.Price)}</td>
+                <td class="px-4 py-2 whitespace-nowrap text-center">${slipButton}</td>
+                <td class="px-4 py-2 whitespace-nowrap text-sm font-medium flex space-x-2"><button class="text-yellow-600 hover:text-yellow-900" title="แก้ไข"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button><button class="text-red-600 hover:text-red-900" title="ลบ"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button></td>
+            `;
+            classStudentListBody.appendChild(row);
+        });
+
+        showCard(classDetailsCard);
+    }
+
+    classStudentListBody.addEventListener('click', (e) => {
+        const slipBtn = e.target.closest('.view-slip-btn');
+        if(slipBtn) {
+            const imageUrl = slipBtn.dataset.slipImage;
+            Swal.fire({
+                imageUrl: imageUrl,
+                imageHeight: 500,
+                imageAlt: 'Payment Slip'
+            });
+        }
+    });
+
+})(); // End of IIFE
+</script>
+</body>
+</html>
